@@ -3,17 +3,23 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
 
 #include <openssl/ssl.h>
 
 int SSL_read(SSL *ssl, void *buf, int num) {
-  char *log_file = "/tmp/ssl_read.log";
   int (*original_fn)(SSL*, void*, int) = dlsym(RTLD_NEXT, "SSL_read");
 
   int ret = original_fn(ssl, buf, num);
   if (ret <= 0) {
+    return ret;
+  }
+
+  char *log_file = getenv("PRELOAD_SSL_READ_LOGFILE");
+  if (log_file == NULL) {
+    fprintf(stderr, "[preload-ssl]: PRELOAD_SSL_READ_LOGFILE variable not set; not writing log\n");
     return ret;
   }
 
